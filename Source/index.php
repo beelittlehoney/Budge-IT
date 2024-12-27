@@ -5,8 +5,6 @@ $username = "u415861906_infosec2234";
 $password = "3nE[W0=#vnXwbqx!";
 $dbname = "u415861906_infosec2234";
 
-// Test Push after Rebase
-
 $conn = new mysqli($host, $username, $password, $database);
 
 if ($conn->connect_error) {
