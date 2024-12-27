@@ -1,34 +1,39 @@
 <?php
 // Database Connection
-$host = "auth-db1156.hstgr.io"; // Corrected host
+$host = "auth-db1156.hstgr.io/index.php?route=/database/structure&db=u415861906_infosec2234";
 $username = "u415861906_infosec2234";
 $password = "3nE[W0=#vnXwbqx!";
-$dbname = "u415861906_infosec2234"; // Corrected variable name
+$dbname = "u415861906_infosec2234";
 
-// Create connection
-$conn = new mysqli($host, $username, $password, $dbname);
+// Create PDO instance for database connection
+$dsn = "mysql:host=$host;dbname=$dbname";
+$options = [
+    PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
+    PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+    PDO::ATTR_EMULATE_PREPARES   => false,
+];
 
-// Check connection
-if ($conn->connect_error) {
-    die("Connection failed: " . $conn->connect_error);
+// Try connecting to the database
+try {
+    $pdo = new PDO($dsn, $username, $password, $options);
+} catch (\PDOException $e) {
+    die("Database connection failed: " . $e->getMessage());
 }
 
-// Handle form submissions
-if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    if (isset($_POST['description']) && isset($_POST['amount'])) {
-        $description = $conn->real_escape_string($_POST['description']);
-        $amount = $conn->real_escape_string($_POST['amount']);
-
-        $sql = "INSERT INTO transactions (description, amount) VALUES ('$description', '$amount')";
-        if ($conn->query($sql) === TRUE) {
-            echo "Transaction added successfully";
-        } else {
-            echo "Error: " . $sql . "<br>" . $conn->error;
-        }
-    }
+// Create the table if it doesn't exist
+try {
+    $createTableQuery = "
+    CREATE TABLE IF NOT EXISTS personaldata (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        lastname VARCHAR(255) NOT NULL,
+        rstname VARCHAR(255) NOT NULL,
+        middlename VARCHAR(255) NOT NULL
+    )";
+    $pdo->exec($createTableQuery);
+} catch (\PDOException $e) {
+    die("Table creation failed: " . $e->getMessage());
 }
 
-$conn->close();
 ?>
 
 
