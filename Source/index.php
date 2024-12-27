@@ -1,6 +1,32 @@
 <?php
-// PHP code for backend processing will go here.
-// For example, connecting to a database or handling form submissions.
+// Database Connection
+$host = "https://auth-db1156.hstgr.io/index.php?route=/";
+$username = "u415861906_infosec2234";
+$password = "3nE[W0=#vnXwbqx!";
+$dbname = "u415861906_infosec2234";
+
+$conn = new mysqli($host, $username, $password, $database);
+
+if ($conn->connect_error) {
+    die("Connection failed: " . $conn->connect_error);
+}
+
+// Handle form submissions
+if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+    if (isset($_POST['description']) && isset($_POST['amount'])) {
+        $description = $conn->real_escape_string($_POST['description']);
+        $amount = $conn->real_escape_string($_POST['amount']);
+
+        $sql = "INSERT INTO transactions (description, amount) VALUES ('$description', '$amount')";
+        if ($conn->query($sql) === TRUE) {
+            echo "Transaction added successfully";
+        } else {
+            echo "Error: " . $sql . "<br>" . $conn->error;
+        }
+    }
+}
+
+$conn->close();
 ?>
 
 <!DOCTYPE html>
