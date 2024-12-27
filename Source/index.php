@@ -1,12 +1,12 @@
 <?php
 // Database Connection
-$host = "auth-db1156.hstgr.io/index.php?route=/database/structure&db=u415861906_infosec2234";
+$host = "auth-db1156.hstgr.io"; // Corrected host
 $username = "u415861906_infosec2234";
 $password = "3nE[W0=#vnXwbqx!";
 $dbname = "u415861906_infosec2234";
 
 // Create PDO instance for database connection
-$dsn = "mysql:host=$host;dbname=$dbname";
+$dsn = "mysql:host=$host;dbname=$dbname;charset=utf8mb4";
 $options = [
     PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
     PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
@@ -16,6 +16,7 @@ $options = [
 // Try connecting to the database
 try {
     $pdo = new PDO($dsn, $username, $password, $options);
+    echo "Database connection successful!<br>";
 } catch (\PDOException $e) {
     die("Database connection failed: " . $e->getMessage());
 }
@@ -30,10 +31,10 @@ try {
         middlename VARCHAR(255) NOT NULL
     )";
     $pdo->exec($createTableQuery);
+    echo "Table created successfully!";
 } catch (\PDOException $e) {
     die("Table creation failed: " . $e->getMessage());
 }
-
 ?>
 
 
