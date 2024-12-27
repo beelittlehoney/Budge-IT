@@ -1,12 +1,14 @@
 <?php
 // Database Connection
-$host = "https://auth-db1156.hstgr.io/index.php?route=/";
+$host = "auth-db1156.hstgr.io"; // Corrected host
 $username = "u415861906_infosec2234";
 $password = "3nE[W0=#vnXwbqx!";
-$dbname = "u415861906_infosec2234";
+$dbname = "u415861906_infosec2234"; // Corrected variable name
 
-$conn = new mysqli($host, $username, $password, $database);
+// Create connection
+$conn = new mysqli($host, $username, $password, $dbname);
 
+// Check connection
 if ($conn->connect_error) {
     die("Connection failed: " . $conn->connect_error);
 }
@@ -28,6 +30,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
 $conn->close();
 ?>
+
 
 <!DOCTYPE html>
 <html lang="en">
