@@ -1,6 +1,6 @@
 <?php
 // Database Connection
-$host = "auth-db1156.hstgr.io"; // Corrected host
+$host = "localhost"; // Corrected host
 $username = "u415861906_infosec2234";
 $password = "3nE[W0=#vnXwbqx!";
 $dbname = "u415861906_infosec2234";
