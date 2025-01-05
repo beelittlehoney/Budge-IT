@@ -1,40 +1,121 @@
 <?php
-// Database Connection
-$host = "localhost"; // Corrected host
-$username = "u415861906_infosec2234";
-$password = "3nE[W0=#vnXwbqx!";
-$dbname = "u415861906_infosec2234";
+// Database credentials
+$host = "localhost";
+$dbname = "test";
+$username = "root";
+$password = "";
 
-// Create PDO instance for database connection
+// Create database connection
 $dsn = "mysql:host=$host;dbname=$dbname;charset=utf8mb4";
 $options = [
-    PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
+    PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
     PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-    PDO::ATTR_EMULATE_PREPARES   => false,
+    PDO::ATTR_EMULATE_PREPARES => false,
 ];
 
-// Try connecting to the database
 try {
     $pdo = new PDO($dsn, $username, $password, $options);
-    echo "Database connection successful!<br>";
-} catch (\PDOException $e) {
-    die("Database connection failed: " . $e->getMessage());
+} catch (PDOException $e) {
+    die("Database Connection Failed: " . $e->getMessage());
 }
 
-// Create the table if it doesn't exist
+// Create table if not exists
 try {
-    $createTableQuery = "
-    CREATE TABLE IF NOT EXISTS personaldata (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        lastname VARCHAR(255) NOT NULL,
-        rstname VARCHAR(255) NOT NULL,
-        middlename VARCHAR(255) NOT NULL
+    $createTable = "CREATE TABLE IF NOT EXISTS transactions (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    description VARCHAR(255) NOT NULL,
+                    amount DECIMAL(10, 2) NULL,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )";
-    $pdo->exec($createTableQuery);
-    echo "Table created successfully!";
-} catch (\PDOException $e) {
-    die("Table creation failed: " . $e->getMessage());
+    $pdo->exec($createTable);
+} catch (PDOException $e) {
+    die("Table Creation Failed: " . $e->getMessage());
 }
+
+// Add default transactions if the table is empty
+function addDefaultTransactions($pdo) {
+    $query = "SELECT COUNT(*) as count FROM transactions";
+    $stmt = $pdo->query($query);
+    $row = $stmt->fetch();
+    if ($row['count'] == 0) {
+        $defaultTransaction = ['description' => 'Start Saving!', 'amount' => null];
+        $insertQuery = "INSERT INTO transactions (description, amount) VALUES (:description, :amount)";
+        $stmt = $pdo->prepare($insertQuery);
+        $stmt->execute($defaultTransaction);
+    }
+}
+
+// Handle requests
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $description = isset($_POST['description']) ? $_POST['description'] : '';
+    $amount = isset($_POST['amount']) ? $_POST['amount'] : 0;
+
+    if (!empty($description) && is_numeric($amount)) {
+        // Remove default transactions if they exist
+        $deleteDefaultQuery = "DELETE FROM transactions WHERE description = 'Start Saving!'";
+        $pdo->exec($deleteDefaultQuery);
+
+        // Insert user transaction
+        $query = "INSERT INTO transactions (description, amount) VALUES (:description, :amount)";
+        $stmt = $pdo->prepare($query);
+        $stmt->execute(['description' => $description, 'amount' => $amount]);
+
+        echo json_encode(["success" => true, "message" => "Transaction added successfully."]);
+    } else {
+        echo json_encode(["success" => false, "message" => "Invalid input."]);
+    }
+    exit;
+} elseif ($_SERVER['REQUEST_METHOD'] === 'GET') {
+    if (isset($_GET['fetch']) && $_GET['fetch'] === 'true') {
+        // Add default transactions if the table is empty
+        addDefaultTransactions($pdo);
+
+        $query = "SELECT * FROM transactions ORDER BY created_at DESC";
+        $stmt = $pdo->query($query);
+
+        $transactions = $stmt->fetchAll();
+
+        header('Content-Type: application/json'); // Ensure JSON header
+        echo json_encode($transactions);
+        exit;
+    }
+}
+
+if ($_SERVER['REQUEST_METHOD'] === 'DELETE') {
+    parse_str(file_get_contents("php://input"), $data);
+    $id = isset($data['id']) ? $data['id'] : null;
+
+    if ($id) {
+        $query = "DELETE FROM transactions WHERE id = :id";
+        $stmt = $pdo->prepare($query);
+        $stmt->execute(['id' => $id]);
+
+        echo json_encode(["success" => true, "message" => "Transaction deleted successfully."]);
+    } else {
+        echo json_encode(["success" => false, "message" => "Invalid transaction ID."]);
+    }
+    exit;
+}
+
+if ($_SERVER['REQUEST_METHOD'] === 'PUT') {
+    parse_str(file_get_contents("php://input"), $data);
+    $id = isset($data['id']) ? $data['id'] : null;
+    $description = isset($data['description']) ? $data['description'] : '';
+    $amount = isset($data['amount']) ? $data['amount'] : 0;
+
+    if ($id && !empty($description) && is_numeric($amount)) {
+        $query = "UPDATE transactions SET description = :description, amount = :amount WHERE id = :id";
+        $stmt = $pdo->prepare($query);
+        $stmt->execute(['id' => $id, 'description' => $description, 'amount' => $amount]);
+
+        echo json_encode(["success" => true, "message" => "Transaction updated successfully."]);
+    } else {
+        echo json_encode(["success" => false, "message" => "Invalid input."]);
+    }
+    exit;
+}
+
+
 ?>
 
 
@@ -52,7 +133,7 @@ try {
             background-color: #f4f4f4;
         }
         header {
-            background-color: #4CAF50;
+            background-color: #1E385F;
             color: white;
             padding: 10px 20px;
             text-align: center;
@@ -64,7 +145,7 @@ try {
         nav a {
             margin: 0 15px;
             text-decoration: none;
-            color: #4CAF50;
+            color: #1E385F;
             font-weight: bold;
         }
         nav a:hover {
@@ -87,13 +168,13 @@ try {
             font-size: 16px;
         }
         form button {
-            background-color: #4CAF50;
+            background-color: #1E385F;
             color: white;
             border: none;
             cursor: pointer;
         }
         form button:hover {
-            background-color: #45a049;
+            background-color: #163351;
         }
         table {
             width: 100%;
@@ -124,7 +205,7 @@ try {
             <h2>Add Expense/Income</h2>
             <form id="addForm">
                 <input type="text" id="description" placeholder="Description" required>
-                <input type="number" id="amount" placeholder="Amount" required>
+                <input type="number" id="amount" placeholder="Amount (e.g., PHP 1,234.56)" required>
                 <button type="submit">Add</button>
             </form>
         </section>
@@ -136,7 +217,8 @@ try {
                     <tr>
                         <th>Description</th>
                         <th>Amount</th>
-                        <th>Actions</th>
+                        <th>Date</th>
+                        <th>Options</th>
                     </tr>
                 </thead>
                 <tbody id="transactions"></tbody>
@@ -146,7 +228,7 @@ try {
         <section id="goals">
             <h2>Set Savings Goals</h2>
             <form id="goalForm">
-                <input type="number" id="goalAmount" placeholder="Savings Goal" required>
+                <input type="number" id="goalAmount" placeholder="Savings Goal (e.g., PHP 12,345.67)" required>
                 <button type="submit">Set Goal</button>
             </form>
             <p id="goalStatus"></p>
@@ -159,54 +241,143 @@ try {
     </div>
 
     <script>
-        const transactions = [];
+        const transactionsTable = document.getElementById('transactions');
         const addForm = document.getElementById('addForm');
         const goalForm = document.getElementById('goalForm');
-        const transactionsTable = document.getElementById('transactions');
         const goalStatus = document.getElementById('goalStatus');
         let savingsGoal = 0;
 
-        // Add transaction
-        addForm.addEventListener('submit', function(event) {
-            event.preventDefault();
+        async function fetchTransactions() {
+            const response = await fetch(location.pathname + '?fetch=true');
+            const transactions = await response.json();
+            updateTransactionsTable(transactions);
+        }
+        async function handleDelete(id) {
+            const confirmation = confirm('Are you sure you want to delete this transaction?');
+            if (!confirmation) return;
+
+            const response = await fetch(location.href, {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: new URLSearchParams({ id }),
+            });
+
+            const result = await response.json();
+            if (result.success) {
+                fetchTransactions(); // Refresh the table
+            } else {
+                alert(result.message);
+            }
+        }
+
+        function handleEdit(id) {
+            const description = prompt('Enter the new description:');
+            const amount = prompt('Enter the new amount:');
+
+            if (description && amount) {
+                fetch(location.href, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: new URLSearchParams({ id, description, amount }),
+                })
+                    .then((response) => response.json())
+                    .then((result) => {
+                        if (result.success) {
+                            fetchTransactions(); // Refresh the table
+                        } else {
+                            alert(result.message);
+                        }
+                    })
+                    .catch((error) => console.error('Error updating transaction:', error));
+            }
+        }
+
+        addForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
             const description = document.getElementById('description').value;
-            const amount = parseFloat(document.getElementById('amount').value);
+            const amount = document.getElementById('amount').value;
 
-            transactions.push({ description, amount });
-            document.getElementById('description').value = '';
-            document.getElementById('amount').value = '';
+            const response = await fetch(location.href, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: new URLSearchParams({ description, amount })
+            });
 
-            updateTransactions();
+            const result = await response.json();
+            if (result.success) {
+                fetchTransactions(); // Refresh table to reflect changes
+                document.getElementById('description').value = '';
+                document.getElementById('amount').value = '';
+            } else {
+                alert(result.message);
+            }
         });
 
-        // Set savings goal
-        goalForm.addEventListener('submit', function(event) {
-            event.preventDefault();
-            savingsGoal = parseFloat(document.getElementById('goalAmount').value);
-            goalStatus.textContent = `Savings Goal Set: $${savingsGoal}`;
-        });
+        function updateTransactionsTable(transactions) {
+            transactionsTable.innerHTML = ''; // Clear the table
 
-        // Update transactions table
-        function updateTransactions() {
-            transactionsTable.innerHTML = '';
-            transactions.forEach((transaction, index) => {
+            const tableHeaders = document.querySelector('table thead tr');
+
+            if (!transactions || transactions.length === 0 || (transactions.length === 1 && transactions[0].description === 'Start Saving!' && transactions[0].amount === null)) {
+                // Hide "Options" column if only the default transaction is active
+                tableHeaders.innerHTML = `
+                    <th>Description</th>
+                    <th>Amount</th>
+                    <th>Date</th>
+                `;
+
+                // Add the default row
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>Start Saving!</td>
+                    <td></td>
+                    <td></td>
+                `;
+                transactionsTable.appendChild(row);
+                return;
+            }
+
+            // Show "Options" column in the header
+            tableHeaders.innerHTML = `
+                <th>Description</th>
+                <th>Amount</th>
+                <th>Date</th>
+                <th>Options</th>
+            `;
+
+            transactions.forEach((transaction) => {
                 const row = document.createElement('tr');
                 row.innerHTML = `
                     <td>${transaction.description}</td>
-                    <td>${transaction.amount}</td>
+                    <td>${transaction.amount !== null ? `PHP ${parseFloat(transaction.amount).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : ''}</td>
+                    <td>${transaction.created_at ? new Date(transaction.created_at).toLocaleString() : ''}</td>
                     <td>
-                        <button onclick="deleteTransaction(${index})">Delete</button>
+                        ${transaction.id ? `
+                            <button class="edit-btn" data-id="${transaction.id}">Edit</button>
+                            <button class="delete-btn" data-id="${transaction.id}">Delete</button>
+                        ` : ''}
                     </td>
                 `;
                 transactionsTable.appendChild(row);
             });
+
+            // Add event listeners for the buttons
+            document.querySelectorAll('.edit-btn').forEach((button) =>
+                button.addEventListener('click', (e) => handleEdit(e.target.dataset.id))
+            );
+            document.querySelectorAll('.delete-btn').forEach((button) =>
+                button.addEventListener('click', (e) => handleDelete(e.target.dataset.id))
+            );
         }
 
-        // Delete transaction
-        function deleteTransaction(index) {
-            transactions.splice(index, 1);
-            updateTransactions();
-        }
+        goalForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            savingsGoal = parseFloat(document.getElementById('goalAmount').value);
+            goalStatus.textContent = `Savings Goal Set: PHP ${savingsGoal.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+            document.getElementById('goalAmount').value = '';
+        });
+        fetchTransactions();
     </script>
 </body>
 </html>
