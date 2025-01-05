@@ -25,6 +25,7 @@ try {
                     id INT AUTO_INCREMENT PRIMARY KEY,
                     description VARCHAR(255) NOT NULL,
                     amount DECIMAL(10, 2) NULL,
+                    type ENUM('income', 'expense') NOT NULL,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )";
     $pdo->exec($createTable);
@@ -38,8 +39,8 @@ function addDefaultTransactions($pdo) {
     $stmt = $pdo->query($query);
     $row = $stmt->fetch();
     if ($row['count'] == 0) {
-        $defaultTransaction = ['description' => 'Start Saving!', 'amount' => null];
-        $insertQuery = "INSERT INTO transactions (description, amount) VALUES (:description, :amount)";
+        $defaultTransaction = ['description' => 'Start Saving!', 'amount' => null, 'type' => 'income'];
+        $insertQuery = "INSERT INTO transactions (description, amount, type) VALUES (:description, :amount, :type)";
         $stmt = $pdo->prepare($insertQuery);
         $stmt->execute($defaultTransaction);
     }
@@ -49,16 +50,17 @@ function addDefaultTransactions($pdo) {
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $description = isset($_POST['description']) ? $_POST['description'] : '';
     $amount = isset($_POST['amount']) ? $_POST['amount'] : 0;
+    $type = isset($_POST['type']) ? $_POST['type'] : 'expense';
 
-    if (!empty($description) && is_numeric($amount)) {
+    if (!empty($description) && is_numeric($amount) && in_array($type, ['income', 'expense'])) {
         // Remove default transactions if they exist
         $deleteDefaultQuery = "DELETE FROM transactions WHERE description = 'Start Saving!'";
         $pdo->exec($deleteDefaultQuery);
 
         // Insert user transaction
-        $query = "INSERT INTO transactions (description, amount) VALUES (:description, :amount)";
+        $query = "INSERT INTO transactions (description, amount, type) VALUES (:description, :amount, :type)";
         $stmt = $pdo->prepare($query);
-        $stmt->execute(['description' => $description, 'amount' => $amount]);
+        $stmt->execute(['description' => $description, 'amount' => $amount, 'type' => $type]);
 
         echo json_encode(["success" => true, "message" => "Transaction added successfully."]);
     } else {
@@ -102,11 +104,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'PUT') {
     $id = isset($data['id']) ? $data['id'] : null;
     $description = isset($data['description']) ? $data['description'] : '';
     $amount = isset($data['amount']) ? $data['amount'] : 0;
+    $type = isset($data['type']) ? $data['type'] : 'expense';
 
-    if ($id && !empty($description) && is_numeric($amount)) {
-        $query = "UPDATE transactions SET description = :description, amount = :amount WHERE id = :id";
+    if ($id && !empty($description) && is_numeric($amount) && in_array($type, ['income', 'expense'])) {
+        $query = "UPDATE transactions SET description = :description, amount = :amount, type = :type WHERE id = :id";
         $stmt = $pdo->prepare($query);
-        $stmt->execute(['id' => $id, 'description' => $description, 'amount' => $amount]);
+        $stmt->execute(['id' => $id, 'description' => $description, 'amount' => $amount, 'type' => $type]);
 
         echo json_encode(["success" => true, "message" => "Transaction updated successfully."]);
     } else {
@@ -114,11 +117,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'PUT') {
     }
     exit;
 }
-
-
 ?>
-
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -162,7 +161,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'PUT') {
             display: flex;
             flex-direction: column;
         }
-        form input, form button {
+        form input, form button, form select {
             margin: 10px 0;
             padding: 10px;
             font-size: 16px;
@@ -206,6 +205,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'PUT') {
             <form id="addForm">
                 <input type="text" id="description" placeholder="Description" required>
                 <input type="number" id="amount" placeholder="Amount (e.g., PHP 1,234.56)" required>
+                <select id="type" required>
+                    <option value="expense">Expense</option>
+                    <option value="income">Income</option>
+                </select>
                 <button type="submit">Add</button>
             </form>
         </section>
@@ -217,6 +220,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'PUT') {
                     <tr>
                         <th>Description</th>
                         <th>Amount</th>
+                        <th>Type</th>
                         <th>Date</th>
                         <th>Options</th>
                     </tr>
@@ -273,12 +277,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'PUT') {
         function handleEdit(id) {
             const description = prompt('Enter the new description:');
             const amount = prompt('Enter the new amount:');
+            const type = prompt('Enter the type (income/expense):');
 
-            if (description && amount) {
+            if (description && amount && type) {
                 fetch(location.href, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                    body: new URLSearchParams({ id, description, amount }),
+                    body: new URLSearchParams({ id, description, amount, type }),
                 })
                     .then((response) => response.json())
                     .then((result) => {
@@ -296,11 +301,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'PUT') {
             e.preventDefault();
             const description = document.getElementById('description').value;
             const amount = document.getElementById('amount').value;
+            const type = document.getElementById('type').value;
 
             const response = await fetch(location.href, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: new URLSearchParams({ description, amount })
+                body: new URLSearchParams({ description, amount, type })
             });
 
             const result = await response.json();
@@ -308,6 +314,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'PUT') {
                 fetchTransactions(); // Refresh table to reflect changes
                 document.getElementById('description').value = '';
                 document.getElementById('amount').value = '';
+                document.getElementById('type').value = 'expense';
             } else {
                 alert(result.message);
             }
@@ -323,6 +330,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'PUT') {
                 tableHeaders.innerHTML = `
                     <th>Description</th>
                     <th>Amount</th>
+                    <th>Type</th>
                     <th>Date</th>
                 `;
 
@@ -330,6 +338,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'PUT') {
                 const row = document.createElement('tr');
                 row.innerHTML = `
                     <td>Start Saving!</td>
+                    <td></td>
                     <td></td>
                     <td></td>
                 `;
@@ -341,6 +350,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'PUT') {
             tableHeaders.innerHTML = `
                 <th>Description</th>
                 <th>Amount</th>
+                <th>Type</th>
                 <th>Date</th>
                 <th>Options</th>
             `;
@@ -350,6 +360,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'PUT') {
                 row.innerHTML = `
                     <td>${transaction.description}</td>
                     <td>${transaction.amount !== null ? `PHP ${parseFloat(transaction.amount).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : ''}</td>
+                    <td>${transaction.type}</td>
                     <td>${transaction.created_at ? new Date(transaction.created_at).toLocaleString() : ''}</td>
                     <td>
                         ${transaction.id ? `
