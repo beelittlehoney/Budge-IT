@@ -1,0 +1,193 @@
+import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'login_page.dart';
+
+class SignUpScreen extends StatefulWidget {
+  @override
+  _SignUpScreenState createState() => _SignUpScreenState();
+}
+
+class _SignUpScreenState extends State<SignUpScreen> {
+  int _currentStep = 0;
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _ageController = TextEditingController();
+  final TextEditingController _phoneController = TextEditingController();
+  final TextEditingController _birthdateController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+  final TextEditingController _confirmPasswordController = TextEditingController();
+  String? _selectedGender;
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _ageController.dispose();
+    _phoneController.dispose();
+    _birthdateController.dispose();
+    _emailController.dispose();
+    _passwordController.dispose();
+    _confirmPasswordController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _handleSignUp() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    try {
+      final response = await http.post(
+        Uri.parse('http://localhost/flutter_api/signup.php'),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({
+          'name': _nameController.text.trim(),
+          'age': _ageController.text.trim(),
+          'gender': _selectedGender,
+          'phone': _phoneController.text.trim(),
+          'birthdate': _birthdateController.text.trim(),
+          'email': _emailController.text.trim(),
+          'password': _passwordController.text.trim(),
+        }),
+      );
+
+      final data = json.decode(response.body);
+      if (data['success']) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Signup successful.')),
+        );
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => LoginScreen()),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(data['message'])),
+        );
+      }
+    } catch (error) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('An error occurred. Please try again.')),
+      );
+    }
+  }
+
+  void _nextStep() {
+    if (_formKey.currentState!.validate()) {
+      setState(() => _currentStep++);
+    }
+  }
+
+  void _previousStep() {
+    if (_currentStep > 0) {
+      setState(() => _currentStep--);
+    }
+  }
+
+  Future<void> _selectBirthdate() async {
+    DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: DateTime(1900),
+      lastDate: DateTime.now(),
+    );
+    if (picked != null) {
+      setState(() {
+        _birthdateController.text = DateFormat('yyyy/MM/dd').format(picked);
+      });
+    }
+  }
+
+  Widget _buildSocialButton(String logoPath, String text, Color color) {
+    return ElevatedButton(
+      onPressed: () {},
+      style: ElevatedButton.styleFrom(
+        backgroundColor: color,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(30),
+        ),
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Image.asset(logoPath, height: 24),
+          const SizedBox(width: 10),
+          Text(text, style: const TextStyle(color: Colors.white, fontSize: 16)),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Container(
+        decoration: const BoxDecoration(color: Color(0xFF242424)),
+        child: Center(
+          child: SingleChildScrollView(
+            child: Container(
+              constraints: const BoxConstraints(maxWidth: 480),
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Image.asset('assets/images/logo.png', width: 120, height: 120),
+                    const SizedBox(height: 40),
+                    Text(
+                      "Create Your Account",
+                      style: GoogleFonts.poppins(fontSize: 26, fontWeight: FontWeight.bold, color: Colors.white),
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      "Sign up to get started",
+                      style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w400, color: Colors.white70),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 40),
+                    const SizedBox(height: 30),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        if (_currentStep > 0)
+                          ElevatedButton(
+                            onPressed: _previousStep,
+                            style: ElevatedButton.styleFrom(backgroundColor: Colors.grey[600]),
+                            child: const Text("Back", style: TextStyle(color: Colors.white)),
+                          ),
+                        ElevatedButton(
+                          onPressed: _currentStep == 2 ? _handleSignUp : _nextStep,
+                          style: ElevatedButton.styleFrom(backgroundColor: Colors.grey[800]),
+                          child: Text(_currentStep == 2 ? "Sign Up" : "Next", style: const TextStyle(color: Colors.white)),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+                    _buildSocialButton('assets/images/google.png', "Continue with Google", Colors.red),
+                    const SizedBox(height: 10),
+                    _buildSocialButton('assets/images/facebook.png', "Continue with Facebook", Colors.blue),
+                    const SizedBox(height: 10),
+                    _buildSocialButton('assets/images/apple.png', "Continue with Apple", Colors.black),
+                    const SizedBox(height: 20),
+                    TextButton(
+                      onPressed: () {
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(builder: (context) => LoginScreen()),
+                        );
+                      },
+                      child: const Text("Already have an account? Log in", style: TextStyle(color: Colors.white)),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
