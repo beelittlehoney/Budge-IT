@@ -1,0 +1,53 @@
+name: code_breaker
+description: "A new Flutter project."
+
+# Prevent the package from being accidentally published to pub.dev
+publish_to: 'none'
+
+# Application version and build number
+version: 1.0.0+1
+
+# Dart SDK version
+environment:
+  sdk: ^3.6.1
+
+# Dependencies
+dependencies:
+  flutter:
+    sdk: flutter
+
+  fl_chart: ^0.63.0
+  cupertino_icons: ^1.0.8
+  google_fonts: ^4.0.4
+  intl: ^0.18.0
+  flutter_staggered_animations: ^1.0.0
+  flutter_svg: ^1.1.0  # Add flutter_svg for SVG support
+  font_awesome_flutter: ^10.0.0  # Add font_awesome_flutter for FontAwesome icons
+  lottie: ^2.3.0  # Added Lottie dependency
+  http: ^1.2.2
+
+# Development dependencies
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+
+# Flutter-specific configuration
+flutter:
+  # Ensure Material Icons font is included
+  uses-material-design: true
+
+  # Assets included in the project
+  assets:
+    - assets/images/logo.png
+    - assets/icons/electronic.png
+    - assets/icons/shopping.png
+    - assets/icons/shopping_2.png
+    - assets/icons/taxi.png
+    - assets/icons/doctor.png
+    - assets/illustrations/your_illustration.svg  # Add your SVG illustration path here
+    - assets/animations/track_budget_animation.json  # Add your Lottie animation file here
+    - assets/icons/menu_icon.png
+    - assets/icons/home_icon.png
+    - assets/icons/records_icon.png
+    - assets/icons/cards_icon.png
